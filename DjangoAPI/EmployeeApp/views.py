@@ -9,7 +9,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
-# from users.models import NewUser
+from users.models import NewUser
 from .models import Vendor, Item, Receipt, Receipt_items
 from .serializers import VendorSerializer, ItemSerializer, ReceiptSerializer, ReceiptItemsSerializer, FriendSerializer, ReceiptItemFriendSerializer
 from splitwise import Splitwise
@@ -115,7 +115,7 @@ class GmailReceipt(APIView):
 
 
 class ReceiptCreate(APIView):
-    # permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated,)
     def put(self, request):
         # vendor table
         with transaction.atomic():
@@ -153,14 +153,14 @@ class ReceiptCreate(APIView):
 
             #receipt table
 
-            # user = NewUser.objects.get(email=request.data["email"])
+            user = NewUser.objects.get(email=request.data["email"])
             receipt_data = {
                 "receipt_code": request.data["receipt_code"],
                 "receipt_type": request.data["receipt_type"],
                 "delivery_date": request.data["delivery_date"],
                 "receipt_total_fee": request.data["receipt_total_fee"],
                 "vendor": vendor.id,
-                # "user": user.id
+                "user": user.id
               }
             receipts_serializer = ReceiptSerializer(data=receipt_data)
 
