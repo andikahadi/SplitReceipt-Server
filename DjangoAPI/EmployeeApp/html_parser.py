@@ -34,7 +34,7 @@ def parse_string(html_msg):
     #
     #     j += 1
 
-    order_info = {"receipt_type": "", "vendor": "", "receipt_code": "", "deliver_date": "", "receipt_total": "",
+    order_info = {"receipt_type": "", "vendor": "", "receipt_code": "", "delivery_date": "", "receipt_total_fee": "",
                   "item": []}
 
 
@@ -50,12 +50,12 @@ def parse_string(html_msg):
 
     i = 0
     while i < len(span_text)-2:
-        if order_info["deliver_date"] == "":
+        if order_info["delivery_date"] == "":
             date_match = re.search(r'([1-9]|([012][0-9])|(3[01])) (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) '
                                    r'\d\d \d\d:\d\d [+-]\d\d\d\d', span_text[i])
             if date_match is not None:
-                order_info["deliver_date"] = date_match.group()
-                order_info["receipt_total"] = float(re.search(r'\d{1,4}.\d{2}', span_text[i-1]).group())
+                order_info["delivery_date"] = date_match.group()
+                order_info["receipt_total_fee"] = float(re.search(r'\d{1,4}.\d{2}', span_text[i-1]).group())
                 i += 1
                 continue
 
@@ -70,7 +70,9 @@ def parse_string(html_msg):
             continue
 
         if order_info["vendor"] == "" and span_text[i] == "Order from:":
-            order_info["vendor"] = span_text[i+1]
+
+            order_info["vendor"] = re.sub(r'&amp;', "&", (re.sub(r'\s+$', "", span_text[i + 1])))
+
             i += 2
             continue
 
@@ -79,7 +81,7 @@ def parse_string(html_msg):
         if qty_match is not None and price_match is not None:
             qty = int(qty_match.group(1))
             price = float(price_match.group())
-            item = re.sub(r'=\r\n', "", span_text[i+1])
+            item = re.sub(r'&amp;', "&",(re.sub(r'=\r\n', "", span_text[i+1])))
             order_info["item"].append({"name": item, "qty": qty, "total_item_price":price})
             i += 3
             continue

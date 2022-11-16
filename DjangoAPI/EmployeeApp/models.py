@@ -6,16 +6,16 @@ from users.models import NewUser
 
 
 class Vendor(models.Model):
-    vendor = models.CharField(max_length=30, blank = False)
+    vendor = models.CharField(max_length=30, unique=True)
 
 
 class Item(models.Model):
-    name = models.CharField(max_length=30, blank = False)
+    name = models.CharField(max_length=30, unique=True)
 
 
 class Receipt(models.Model):
     RECEIPT_TYPE = (
-      ('Grabfood', 'Grabfood'),
+      ('GrabFood', 'GrabFood'),
       ('Foodpanda', 'Foodpanda')
     )
     receipt_code = models.CharField(max_length=30, primary_key=True, blank=False)
@@ -37,7 +37,7 @@ class Receipt_items(models.Model):
 
 class Friend(models.Model):
     name = models.CharField(max_length=30, blank=False)
-    splitwise_friend_id = models.CharField(max_length=30, blank=False)
+    splitwise_friend_id = models.CharField(max_length=30, blank=False, unique=True)
     user = models.ForeignKey(NewUser, null=True, on_delete=models.SET_NULL)
 
 

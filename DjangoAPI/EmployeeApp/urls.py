@@ -11,6 +11,7 @@ urlpatterns=[
     path('api/splitwise/', views.SplitwiseAuthUrl.as_view()),
     path('api/splitwise-friend/', views.SplitwiseFriend.as_view()),
     path('api/gmail-receipt/', views.GmailReceipt.as_view()),
+    path('api/get-receipt/', views.GetReceipt.as_view()),
   # path('department/<str:pk>/', views.TaskDetails.as_view()),
   # path('department-create/', views.TaskCreate.as_view()),
   # path('department-update/<str:pk>', views.TaskUpdate.as_view()),
