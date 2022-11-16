@@ -1,5 +1,5 @@
 import json
-
+from splitwise.expense import Expense
 from django.core import serializers
 from django.shortcuts import render
 from rest_framework.parsers import JSONParser
@@ -12,13 +12,16 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
+from splitwise.user import ExpenseUser
+
 from users.models import NewUser
-from .models import Vendor, Item, Receipt, Receipt_items, Friend
+from .models import Vendor, Item, Receipt, Receipt_items
 from .serializers import VendorSerializer, ItemSerializer, ReceiptSerializer, ReceiptItemsSerializer, FriendSerializer, ReceiptItemFriendSerializer
 from splitwise import Splitwise
 import re
 from .email_stuff import get_service, get_message, search_messages
 from .html_parser import parse_string
+from django.db.models import Q
 
 
 
@@ -39,6 +42,8 @@ class SplitwiseAuthUrl(APIView):
 
         oauth_verifier = re.search(r'(?<=oauth_verifier=)(.*)$', callbackUrl).group(0)
         oauth_token = re.search(r'(?<=oauth_token=)(.*)(?=&oauth_verifier)', callbackUrl).group(0)
+        # oauth_verifier = re.search(r'(?<=oauth_verifier=)(.*)$', callbackUrl)
+        # oauth_token = re.search(r'(?<=oauth_token=)(.*)(?=&oauth_verifier)', callbackUrl)
 
         consumer_key = "tHpxcE0JxqNQvHUN4Lf9Q4IjyZMM1vLEBpWnSROg"
         consumer_secret = "H3S0iJc2Vcchc3qMtfgZbSMNF9aryjM6E8n6AsFe"
@@ -58,9 +63,9 @@ class SplitwiseFriend(APIView):
 
         friends = sObj.getFriends()
         friend_list = []
-        # for friend in friends:
-        #     friend_list.append({"name": friend.getFirstName(), "id": friend.getId()})
-        #
+        for friend in friends:
+            friend_list.append({"name": friend.getFirstName(), "id": friend.getId()})
+
         # for friend in friend_list:
         #     try:
         #         friend = Friend.objects.get(splitwise_friend_id=friend.name)
@@ -81,7 +86,64 @@ class SplitwiseFriend(APIView):
         #         friend = Friend.objects.get(splitwise_friend_id=friend.name)
 
         return Response(friend_list)
-#
+class SplitwiseExpense(APIView):
+    def post(self, request):
+        consumer_key = "tHpxcE0JxqNQvHUN4Lf9Q4IjyZMM1vLEBpWnSROg"
+        consumer_secret = "H3S0iJc2Vcchc3qMtfgZbSMNF9aryjM6E8n6AsFe"
+        access_token = request.data["access_token"]
+
+        s = Splitwise(consumer_key, consumer_secret, access_token)
+        u = s.getCurrentUser()
+        my_id = u.getId()
+        expense_data = request.data["expenseData"]
+
+        for user_data in expense_data:
+            if user_data["name"] != "Me":
+                owe_amount = str(round(user_data["owedWithFee"],2))
+                expense = Expense()
+                expense.setCost(owe_amount)
+                expense.setDescription(request.data["vendor"])
+
+                user1 = ExpenseUser()
+                user1.setId(my_id)
+                user1.setPaidShare(owe_amount)
+                user1.setOwedShare('0.00')
+                user2 = ExpenseUser()
+                user2.setId(user_data["splitwiseId"])
+                user2.setPaidShare('0.00')
+                user2.setOwedShare(owe_amount)
+                expense.addUser(user1)
+                expense.addUser(user2)
+                nExpense, errors = s.createExpense(expense)
+                print(nExpense.getId())
+
+        return Response("created expense")
+# {
+#     "access_token": {
+#         "oauth_token": "zmqa16oDhMw9rYXGJOeXEMtp3DBvlSt6J8EVa0Z4",
+#         "oauth_token_secret": "IfC8WSDe93EUDFoRdAtRqbwOTggBRJM988iIq4nC"
+#     },
+#     "expenseData": [
+#         {
+#             "name": "Me",
+#             "splitwiseId": "Me",
+#             "owedWithFee": 4.26
+#         },
+#         {
+#             "name": "Gregorius",
+#             "splitwiseId": 6040254,
+#             "owedWithFee": 16.560000000000002
+#         },
+#         {
+#             "name": "Stella",
+#             "splitwiseId": 9555726,
+#             "owedWithFee": 9.01
+#         }
+#     ],
+#     "vendor": "Subway - 100AM",
+#     "receipt_total": "29.84"
+# }
+
 # {
 #         "receipt_type": "GrabFood",
 #         "vendor": "Subway - 100AM",
@@ -158,10 +220,17 @@ class SplitwiseFriend(APIView):
 #             }
 #         ]
 #     }
+
+# from django.db.models import Q
+# criterion1 = Q(question__contains="software")
+# criterion2 = Q(question__contains="java")
+# q = Question.objects.filter(criterion1 & criterion2)
 class GetReceipt(APIView):
     def post(self, request):
         user = NewUser.objects.get(email=request.data['email'])
-        receipts = Receipt.objects.select_related('vendor').filter(user_id=user.id)
+        criterion1 = Q(user_id=user)
+        criterion2 = Q(is_assigned=request.data["is_assigned"])
+        receipts = Receipt.objects.select_related('vendor').filter(criterion1 & criterion2)
         serialized_receipts = json.loads(serializers.serialize('json', receipts))
 
         receipt_fetch_arr = []
@@ -340,6 +409,18 @@ class GmailReceipt(APIView):
 #         "total_item_price" : 8.9
 #     }]
 # }
+
+class ReceiptUpdate(APIView):
+    def patch(self, request):
+        receipt = Receipt.objects.get(receipt_code= request.data["receipt_code"])
+        receipt.is_assigned = True
+        receipt.assignment = request.data["assignment"]
+        receipt.save()
+        # serializer = ReceiptSerializer(instance=receipt, data=request.data["is_assigned"], partial=True)
+        # using task that you get, updating request data from frontend
+        # partial true allows to update one or many, if false need to send all fields back
+
+        return Response("Update done")
 
 
 class ReceiptCreate(APIView):
