@@ -22,6 +22,7 @@ import re
 from .email_stuff import get_service, get_message, search_messages
 from .html_parser import parse_string
 from django.db.models import Q
+import time
 
 from django.contrib.auth.models import Permission
 
@@ -32,9 +33,14 @@ class UserInfo(APIView):
     permission_classes = (IsAuthenticated,)
     def post(self, request):
         user = NewUser.objects.get(email=request.data['email'])
+        date_time = datetime.fromtimestamp(int(user.last_email_fetch)).strftime('%Y-%m-%d %H:%M:%S')
+        print("the date time is")
+        print(date_time)
         response_data = {
             "email": user.email,
+            "user_name": user.user_name,
             "is_admin": user.is_admin,
+            "last_email_fetch": date_time
         }
         # receipts = Receipt.objects.select_related('vendor').filter(criterion1 & criterion2)
         # print(user.is_admin)
@@ -53,6 +59,7 @@ class UserInfo(APIView):
             usersArr = []
             for user in serialized_users:
                 user_template = {
+                    "id": user['pk'],
                     "email": user['fields']["email"],
                     "user_name": user['fields']["user_name"],
                     "date_joined": user['fields']["date_joined"],
@@ -69,12 +76,18 @@ class UserInfo(APIView):
         else:
             return Response("You don't have permission to access the data")
 
-# class UserDelete(APIView):
-#     def delete(self, request, pk):
-#         department = Departments.objects.get(DepartmentId=pk)
-#         department.delete()
-#
-#         return Response('item deleted')
+class UserDelete(APIView):
+    permission_classes = (IsAuthenticated,)
+    def post(self, request):
+        current_user_username = request.user
+        current_user = NewUser.objects.get(user_name=current_user_username)
+        #  delete selected user if current user.is_admin==true
+        if current_user.is_admin:
+            user = NewUser.objects.get(pk=request.data["user_id"])
+            user.delete()
+            return Response('user deleted')
+        else:
+            return Response('You dont have the permission')
 
 class SplitwiseAuthUrl(APIView):
     permission_classes = (IsAuthenticated,)

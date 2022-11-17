@@ -16,6 +16,8 @@ urlpatterns=[
     path('api/get-receipt/', views.GetReceipt.as_view()),
     path('api/receipt-update/', views.ReceiptUpdate.as_view()),
     path('api/receipt-create/', views.ReceiptCreate.as_view()),
+
+    path('api/user-delete/', views.UserDelete.as_view()),
 ]
 
 # urlpatterns = [
