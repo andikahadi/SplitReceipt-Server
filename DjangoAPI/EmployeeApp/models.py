@@ -6,11 +6,11 @@ from users.models import NewUser
 
 
 class Vendor(models.Model):
-    vendor = models.CharField(max_length=30, unique=True)
+    vendor = models.CharField(max_length=150, unique=True)
 
 
 class Item(models.Model):
-    name = models.CharField(max_length=30, unique=True)
+    name = models.CharField(max_length=150, unique=True)
 
 
 class Receipt(models.Model):
@@ -18,15 +18,15 @@ class Receipt(models.Model):
       ('GrabFood', 'GrabFood'),
       ('Foodpanda', 'Foodpanda')
     )
-    receipt_code = models.CharField(max_length=30, primary_key=True, blank=False)
-    receipt_type = models.CharField(max_length=30, choices=RECEIPT_TYPE, blank=True)
-    delivery_date = models.CharField(max_length=30, blank=False)
+    receipt_code = models.CharField(max_length=150, primary_key=True, blank=False)
+    receipt_type = models.CharField(max_length=150, choices=RECEIPT_TYPE, blank=True)
+    delivery_date = models.CharField(max_length=150, blank=False)
     receipt_total_fee = models.DecimalField(max_digits=6, decimal_places=2, blank=False)
     user = models.ForeignKey(NewUser, null=True, on_delete=models.SET_NULL)
     vendor = models.ForeignKey(Vendor, null=True, on_delete=models.SET_NULL)
     is_assigned = models.BooleanField(default=False)
     assignment = models.CharField(max_length=30, null=True)
-    split_description = models.CharField(max_length=600, null=True, blank=True)
+    # split_description = models.CharField(max_length=600, null=True, blank=True)
 
 
 class Receipt_items(models.Model):

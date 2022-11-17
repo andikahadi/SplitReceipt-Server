@@ -14,8 +14,6 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from splitwise.user import ExpenseUser
 from datetime import datetime
-
-
 from users.models import NewUser
 from .models import Vendor, Item, Receipt, Receipt_items
 from .serializers import VendorSerializer, ItemSerializer, ReceiptSerializer, ReceiptItemsSerializer
@@ -25,7 +23,58 @@ from .email_stuff import get_service, get_message, search_messages
 from .html_parser import parse_string
 from django.db.models import Q
 
+from django.contrib.auth.models import Permission
 
+
+
+
+class UserInfo(APIView):
+    permission_classes = (IsAuthenticated,)
+    def post(self, request):
+        user = NewUser.objects.get(email=request.data['email'])
+        response_data = {
+            "email": user.email,
+            "is_admin": user.is_admin,
+        }
+        # receipts = Receipt.objects.select_related('vendor').filter(criterion1 & criterion2)
+        # print(user.is_admin)
+        # receipt_fetch_arr = []
+        return Response(response_data)
+
+    def get(self, request):
+        current_user_username = request.user
+        current_user = NewUser.objects.get(user_name=current_user_username)
+
+        #  return users list if is_admin==true
+        if current_user.is_admin:
+            users = NewUser.objects.all()
+            serialized_users = json.loads(serializers.serialize('json', users))
+
+            usersArr = []
+            for user in serialized_users:
+                user_template = {
+                    "email": user['fields']["email"],
+                    "user_name": user['fields']["user_name"],
+                    "date_joined": user['fields']["date_joined"],
+                    "last_login": user['fields']["last_login"],
+                    "last_email_fetch": user['fields']["last_email_fetch"]
+                }
+                usersArr.append(user_template)
+
+                # get item_arr
+
+            return Response(usersArr)
+
+        # return warning if is_admin == false
+        else:
+            return Response("You don't have permission to access the data")
+
+# class UserDelete(APIView):
+#     def delete(self, request, pk):
+#         department = Departments.objects.get(DepartmentId=pk)
+#         department.delete()
+#
+#         return Response('item deleted')
 
 class SplitwiseAuthUrl(APIView):
     permission_classes = (IsAuthenticated,)
@@ -328,31 +377,53 @@ class GmailReceipt(APIView):
         now = datetime.now()
         print(now)
         epochNow = int(now.strftime('%s')) # in string format
+        print(epochNow)
 
         user = NewUser.objects.get(email=request.data["email"])
-        user.last_email_fetch = str(epochNow)
-        user.save()
 
         google_access_token = request.data["access_token"]
         user_id = 'me'
-        if len(str(user.last_email_fetch)) > 0:
-            search_string = f'after:{epochNow} label:inbox Your Grab E-Receipt Food'
+        if user.last_email_fetch is None:
+            print("empty email fetch")
+            search_string = f'after:{epochNow - (10 * 604800)} label:inbox Your Grab E-Receipt Food'
         else:
-            search_string = f'after:{epochNow - (1 * 604800)} label:inbox Your Grab E-Receipt Food'
+            print("there is email fetch")
+            print(user.last_email_fetch)
+            search_string = f'after:{epochNow} label:inbox Your Grab E-Receipt Food'
 
         service = get_service(google_access_token)
         message_id_list = search_messages(service, user_id, search_string)
+
+        user.last_email_fetch = str(epochNow)
+        user.save()
+        #
+        # {
+        #     "receipt_code": "00123144",
+        #     "receipt_type": "GrabFood",
+        #     "delivery_date": "22 Aug 22 17:27",
+        #     "receipt_total_fee": 42,
+        #     "vendor": "Subway - 107AM",
+        #
+        #     "item": [{
+        #         "name": "wrap14",
+        #         "qty": 1,
+        #         "total_item_price": 9.9
+        #     },
+        #         {
+        #             "name": "wrap11",
+        #             "qty": 2,
+        #             "total_item_price": 8.9
+        #         }]
+        # }
 
         message = []
         for message_id in message_id_list:
             html_message = get_message(service, user_id, message_id)
             message.append(parse_string(html_message))
-
+        print(message)
         # return Response(message)
         for messageItem in message:
-
             with transaction.atomic():
-
                 try:
                     vendor = Vendor.objects.get(vendor=messageItem["vendor"])
                 except ObjectDoesNotExist:
@@ -418,9 +489,7 @@ class GmailReceipt(APIView):
                     else:
                         return Response(receiptitems_serializer.errors)
 
-
-
-        return Response("created")
+        return Response(message)
 
 
 #
