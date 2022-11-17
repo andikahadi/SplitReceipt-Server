@@ -20,6 +20,7 @@ class CustomAccountManager(BaseUserManager):
         other_fields.setdefault('is_staff', True)
         other_fields.setdefault('is_superuser', True)
         other_fields.setdefault('is_active', True)
+        other_fields.setdefault('is_admin', True)
 
         if other_fields.get('is_staff') is not True:
             raise ValueError(
@@ -29,8 +30,12 @@ class CustomAccountManager(BaseUserManager):
             raise ValueError(
                 'Superuser must be assigned to is_superuser=True'
             )
+        if other_fields.get('is_admin') is not True:
+            raise ValueError(
+                'Superuser must be assigned to is_admin=True'
+            )
 
-        return self.create_user(email,user_name, first_name, password, **other_fields)
+        return self.create_user(email, user_name, first_name, password, **other_fields)
 
 
 class NewUser(AbstractBaseUser, PermissionsMixin):
@@ -39,9 +44,11 @@ class NewUser(AbstractBaseUser, PermissionsMixin):
     user_name = models.CharField(max_length=150, unique=True)
     date_joined = models.DateTimeField(verbose_name='date joined', auto_now_add=True)
     last_login = models.DateTimeField(verbose_name='last login', auto_now=True)
-    last_email_fetch = models.DateTimeField(verbose_name='last email fetch', blank=True, null=True)
+    last_email_fetch = models.CharField(max_length= 30, verbose_name='last email fetch', blank=True, null=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+    is_admin = models.BooleanField(default=False)
+    is_superuser = models.BooleanField(default=False)
 
     objects = CustomAccountManager()
 

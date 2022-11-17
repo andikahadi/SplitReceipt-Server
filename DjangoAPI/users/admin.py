@@ -5,9 +5,9 @@ from .models import NewUser
 
 class AccountAdmin(UserAdmin):
     list_display = ('email', 'user_name', 'first_name', 'date_joined',
-                    'last_login', 'is_active', 'is_staff')
+                    'last_login', 'is_active','is_admin', 'is_superuser', 'is_staff')
     search_fields = ('email', 'user_name', 'first_name')
-    readonly_fields = ( 'date_joined', 'last_login')
+    readonly_fields = ('date_joined', 'last_login')
     ordering = ('email',)
 
     filter_horizontal = ()

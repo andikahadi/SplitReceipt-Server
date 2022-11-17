@@ -8,7 +8,6 @@ from rest_framework.permissions import AllowAny
 
 class CustomUserCreate(APIView):
     permission_classes = [AllowAny]
-
     def post(self, request):
         reg_serializer = RegisterUserSerializer(data=request.data)
         if reg_serializer.is_valid():

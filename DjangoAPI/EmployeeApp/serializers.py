@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Vendor, Receipt, Item, Receipt_items, Friend, ReceiptItem_Friend
+from .models import Vendor, Receipt, Item, Receipt_items
 
 # class DepartmentSerializer(serializers.ModelSerializer):
 #   class Meta:
@@ -36,13 +36,13 @@ class ReceiptItemsSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class FriendSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Friend
-        fields = '__all__'
+# class FriendSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Friend
+#         fields = '__all__'
 
 
-class ReceiptItemFriendSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ReceiptItem_Friend
-        fields = '__all__'
+# class ReceiptItemFriendSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = ReceiptItem_Friend
+#         fields = '__all__'

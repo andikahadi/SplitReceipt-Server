@@ -13,10 +13,12 @@ from django.http import HttpResponse
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from splitwise.user import ExpenseUser
+from datetime import datetime
+
 
 from users.models import NewUser
 from .models import Vendor, Item, Receipt, Receipt_items
-from .serializers import VendorSerializer, ItemSerializer, ReceiptSerializer, ReceiptItemsSerializer, FriendSerializer, ReceiptItemFriendSerializer
+from .serializers import VendorSerializer, ItemSerializer, ReceiptSerializer, ReceiptItemsSerializer
 from splitwise import Splitwise
 import re
 from .email_stuff import get_service, get_message, search_messages
@@ -26,6 +28,7 @@ from django.db.models import Q
 
 
 class SplitwiseAuthUrl(APIView):
+    permission_classes = (IsAuthenticated,)
     def get(self, request):
         consumer_key = "tHpxcE0JxqNQvHUN4Lf9Q4IjyZMM1vLEBpWnSROg"
         consumer_secret = "H3S0iJc2Vcchc3qMtfgZbSMNF9aryjM6E8n6AsFe"
@@ -54,6 +57,7 @@ class SplitwiseAuthUrl(APIView):
 
 
 class SplitwiseFriend(APIView):
+    permission_classes = (IsAuthenticated,)
     def post(self, request):
         consumer_key = "tHpxcE0JxqNQvHUN4Lf9Q4IjyZMM1vLEBpWnSROg"
         consumer_secret = "H3S0iJc2Vcchc3qMtfgZbSMNF9aryjM6E8n6AsFe"
@@ -87,6 +91,7 @@ class SplitwiseFriend(APIView):
 
         return Response(friend_list)
 class SplitwiseExpense(APIView):
+    permission_classes = (IsAuthenticated,)
     def post(self, request):
         consumer_key = "tHpxcE0JxqNQvHUN4Lf9Q4IjyZMM1vLEBpWnSROg"
         consumer_secret = "H3S0iJc2Vcchc3qMtfgZbSMNF9aryjM6E8n6AsFe"
@@ -99,7 +104,7 @@ class SplitwiseExpense(APIView):
 
         for user_data in expense_data:
             if user_data["name"] != "Me":
-                owe_amount = str(round(user_data["owedWithFee"],2))
+                owe_amount = str(round(user_data["owedWithFee"], 2))
                 expense = Expense()
                 expense.setCost(owe_amount)
                 expense.setDescription(request.data["vendor"])
@@ -116,6 +121,36 @@ class SplitwiseExpense(APIView):
                 expense.addUser(user2)
                 nExpense, errors = s.createExpense(expense)
                 print(nExpense.getId())
+
+        # owe_amount = str(request.data["receipt_total"])
+        # print(owe_amount)
+        # expense = Expense()
+        # expense.setCost(owe_amount)
+        # expense.setDescription(request.data["vendor"])
+
+        # for userExpense in expense_data:
+        #     if userExpense["name"] == "Me":
+        #         user = ExpenseUser()
+        #         user.setId(my_id)
+        #         user.setPaidShare(owe_amount)
+        #         user.setOwedShare(str(round(userExpense["owedWithFee"],2)))
+        #     else:
+        #         user = ExpenseUser()
+        #         user.setId(userExpense['splitwiseId'])
+        #         user.setPaidShare('0.00')
+        #         user.setOwedShare(str(round(userExpense["owedWithFee"],2)))
+        #         print(str(round(userExpense["owedWithFee"],2)))
+        #     expense.addUser(user)
+        #
+        # nExpense, errors = s.createExpense(expense)
+        # if errors is not None:
+        #     print(errors.getErrors())
+        #
+        # print(nExpense)
+        # print(nExpense.getId())
+
+
+
 
         return Response("created expense")
 # {
@@ -226,6 +261,7 @@ class SplitwiseExpense(APIView):
 # criterion2 = Q(question__contains="java")
 # q = Question.objects.filter(criterion1 & criterion2)
 class GetReceipt(APIView):
+    permission_classes = (IsAuthenticated,)
     def post(self, request):
         user = NewUser.objects.get(email=request.data['email'])
         criterion1 = Q(user_id=user)
@@ -286,10 +322,23 @@ class GetReceipt(APIView):
 
 
 class GmailReceipt(APIView):
+    permission_classes = (IsAuthenticated,)
     def post(self, request):
+
+        now = datetime.now()
+        print(now)
+        epochNow = int(now.strftime('%s')) # in string format
+
+        user = NewUser.objects.get(email=request.data["email"])
+        user.last_email_fetch = str(epochNow)
+        user.save()
+
         google_access_token = request.data["access_token"]
         user_id = 'me'
-        search_string = 'after: 2022/11/01 Your Grab E-Receipt'
+        if len(str(user.last_email_fetch)) > 0:
+            search_string = f'after:{epochNow} label:inbox Your Grab E-Receipt Food'
+        else:
+            search_string = f'after:{epochNow - (1 * 604800)} label:inbox Your Grab E-Receipt Food'
 
         service = get_service(google_access_token)
         message_id_list = search_messages(service, user_id, search_string)
@@ -369,6 +418,8 @@ class GmailReceipt(APIView):
                     else:
                         return Response(receiptitems_serializer.errors)
 
+
+
         return Response("created")
 
 
@@ -411,6 +462,7 @@ class GmailReceipt(APIView):
 # }
 
 class ReceiptUpdate(APIView):
+    permission_classes = (IsAuthenticated,)
     def patch(self, request):
         receipt = Receipt.objects.get(receipt_code= request.data["receipt_code"])
         receipt.is_assigned = True
