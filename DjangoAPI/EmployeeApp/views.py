@@ -165,7 +165,7 @@ class SplitwiseExpense(APIView):
         expense_data = request.data["expenseData"]
 
         for user_data in expense_data:
-            if user_data["name"] != "Me":
+            if user_data["name"] != "You":
                 owe_amount = str(round(user_data["owedWithFee"], 2))
                 expense = Expense()
                 expense.setCost(owe_amount)
