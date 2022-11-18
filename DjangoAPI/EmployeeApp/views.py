@@ -24,27 +24,23 @@ from .html_parser import parse_string
 from django.db.models import Q
 import time
 
-from django.contrib.auth.models import Permission
 
-
-
-
+# 'api/user-read/' POST is to get current user info. GET is to get list of all user for admin.
 class UserInfo(APIView):
     permission_classes = (IsAuthenticated,)
+
     def post(self, request):
         user = NewUser.objects.get(email=request.data['email'])
-        date_time = datetime.fromtimestamp(int(user.last_email_fetch)).strftime('%Y-%m-%d %H:%M:%S')
-        print("the date time is")
-        print(date_time)
+        if user.last_email_fetch is not None:
+            date_time = datetime.fromtimestamp(int(user.last_email_fetch)).strftime('%Y-%m-%d %H:%M:%S')
+        else:
+            date_time = None
         response_data = {
             "email": user.email,
             "user_name": user.user_name,
             "is_admin": user.is_admin,
             "last_email_fetch": date_time
         }
-        # receipts = Receipt.objects.select_related('vendor').filter(criterion1 & criterion2)
-        # print(user.is_admin)
-        # receipt_fetch_arr = []
         return Response(response_data)
 
     def get(self, request):
@@ -68,14 +64,14 @@ class UserInfo(APIView):
                 }
                 usersArr.append(user_template)
 
-                # get item_arr
-
             return Response(usersArr)
 
         # return warning if is_admin == false
         else:
             return Response("You don't have permission to access the data")
 
+
+# 'api/user-delete/' POST to delete user for admin
 class UserDelete(APIView):
     permission_classes = (IsAuthenticated,)
     def post(self, request):
@@ -89,6 +85,8 @@ class UserDelete(APIView):
         else:
             return Response('You dont have the permission')
 
+
+# 'api/splitwise/' GET to get authorization url, POST to get splitwise access token
 class SplitwiseAuthUrl(APIView):
     permission_classes = (IsAuthenticated,)
     def get(self, request):
@@ -118,8 +116,10 @@ class SplitwiseAuthUrl(APIView):
         return Response(access_token)
 
 
+# 'api/splitwise-friend/' POST to get user Splitwise friends list
 class SplitwiseFriend(APIView):
     permission_classes = (IsAuthenticated,)
+
     def post(self, request):
         consumer_key = "tHpxcE0JxqNQvHUN4Lf9Q4IjyZMM1vLEBpWnSROg"
         consumer_secret = "H3S0iJc2Vcchc3qMtfgZbSMNF9aryjM6E8n6AsFe"
@@ -132,26 +132,10 @@ class SplitwiseFriend(APIView):
         for friend in friends:
             friend_list.append({"name": friend.getFirstName(), "id": friend.getId()})
 
-        # for friend in friend_list:
-        #     try:
-        #         friend = Friend.objects.get(splitwise_friend_id=friend.name)
-        #         friend_id = friend.id
-        #     except ObjectDoesNotExist:
-        #         user = NewUser.objects.get(email=request.data["email"])
-        #         friend_data = {
-        #             "name": friend.name,
-        #             "splitwise_friend_id": friend.id,
-        #             "user": user.id
-        #         }
-        #         friend_serializer = FriendSerializer(data=friend_data)
-        #
-        #         if friend_serializer.is_valid():
-        #             friend_serializer.save()
-        #         else:
-        #             return Response(friend_serializer.errors)
-        #         friend = Friend.objects.get(splitwise_friend_id=friend.name)
-
         return Response(friend_list)
+
+
+# 'api/post-expense/' POST to call Splitwise API creating expense
 class SplitwiseExpense(APIView):
     permission_classes = (IsAuthenticated,)
     def post(self, request):
@@ -184,6 +168,7 @@ class SplitwiseExpense(APIView):
                 nExpense, errors = s.createExpense(expense)
                 print(nExpense.getId())
 
+        ## This code is in progress, to have only expense ID if there are more than 2 person involved
         # owe_amount = str(request.data["receipt_total"])
         # print(owe_amount)
         # expense = Expense()
@@ -210,118 +195,10 @@ class SplitwiseExpense(APIView):
         #
         # print(nExpense)
         # print(nExpense.getId())
-
-
-
-
         return Response("created expense")
-# {
-#     "access_token": {
-#         "oauth_token": "zmqa16oDhMw9rYXGJOeXEMtp3DBvlSt6J8EVa0Z4",
-#         "oauth_token_secret": "IfC8WSDe93EUDFoRdAtRqbwOTggBRJM988iIq4nC"
-#     },
-#     "expenseData": [
-#         {
-#             "name": "Me",
-#             "splitwiseId": "Me",
-#             "owedWithFee": 4.26
-#         },
-#         {
-#             "name": "Gregorius",
-#             "splitwiseId": 6040254,
-#             "owedWithFee": 16.560000000000002
-#         },
-#         {
-#             "name": "Stella",
-#             "splitwiseId": 9555726,
-#             "owedWithFee": 9.01
-#         }
-#     ],
-#     "vendor": "Subway - 100AM",
-#     "receipt_total": "29.84"
-# }
 
-# {
-#         "receipt_type": "GrabFood",
-#         "vendor": "Subway - 100AM",
-#         "receipt_code": "100260235-C3VXNKJKCJ6ZGN",
-#         "deliver_date": "11 Oct 22 12:28 +0800",
-#         "receipt_total_fee": 29.84,
-#         "item": [
-# {
-#         "receipt_type": "GrabFood",
-#         "vendor": "Subway - 100AM",
-#         "receipt_code": "100260235-C3VXNKJKCJ6ZGN",
-#         "deliver_date": "11 Oct 22 12:28 +0800",
-#         "receipt_total_fee": 29.84,
-#         "item": [
-#             {
-#                 "name": "Meatball Marinara Melt",
-#                 "qty": 1,
-#                 "total_item_price": 13.5
-#             },
-#             {
-#                 "name": "Roasted Chicken - Cookie Meal",
-#                 "qty": 1,
-#                 "total_item_price": 12.3
-#             },
-#             {
-#                 "name": "Chunky Beef Steak &amp; Cheese",
-#                 "qty": 1,
-#                 "total_item_price": 11.5
-#             }
-#         ]
-#     },
-#     {
-#         "receipt_type": "GrabFood",
-#         "vendor": "Takagi Ramen - AMK",
-#         "receipt_code": "A-3RCOR7FGWFQD",
-#         "deliver_date": "16 Aug 22 19:19 +0800",
-#         "receipt_total_fee": 19.4,
-#         "item": [
-#             {
-#                 "name": "Buddy Meal (U.P. $34.50)",
-#                 "qty": 1,
-#                 "total_item_price": 22.9
-#             }
-#         ]
-#     }
-#             {
-#                 "name": "Meatball Marinara Melt",
-#                 "qty": 1,
-#                 "total_item_price": 13.5
-#             },
-#             {
-#                 "name": "Roasted Chicken - Cookie Meal",
-#                 "qty": 1,
-#                 "total_item_price": 12.3
-#             },
-#             {
-#                 "name": "Chunky Beef Steak &amp; Cheese",
-#                 "qty": 1,
-#                 "total_item_price": 11.5
-#             }
-#         ]
-#     },
-#     {
-#         "receipt_type": "GrabFood",
-#         "vendor": "Takagi Ramen - AMK",
-#         "receipt_code": "A-3RCOR7FGWFQD",
-#         "deliver_date": "16 Aug 22 19:19 +0800",
-#         "receipt_total_fee": 19.4,
-#         "item": [
-#             {
-#                 "name": "Buddy Meal (U.P. $34.50)",
-#                 "qty": 1,
-#                 "total_item_price": 22.9
-#             }
-#         ]
-#     }
 
-# from django.db.models import Q
-# criterion1 = Q(question__contains="software")
-# criterion2 = Q(question__contains="java")
-# q = Question.objects.filter(criterion1 & criterion2)
+# 'api/get-receipt/' POST to get receipt from database
 class GetReceipt(APIView):
     permission_classes = (IsAuthenticated,)
     def post(self, request):
@@ -366,27 +243,15 @@ class GetReceipt(APIView):
                 }
             receipt_fetch_arr.append(receipt_fetch_template)
         return Response(receipt_fetch_arr)
-# {
-#         "model": "EmployeeApp.receipt",
-#         "pk": "A-3RCOR7FGWFQD",
-#         "fields": {
-#             "receipt_type": "GrabFood",
-#             "delivery_date": "16 Aug 22 19:19 +0800",
-#             "receipt_total_fee": "19.40",
-#             "user": 1,
-#             "vendor": 10,
-#             "is_assigned": false,
-#             "assignment": null,
-#             "vendor_name": "Takagi Ramen - AMK"
-#         }
-#     }
 
 
+# 'api/gmail-receipt/' POST : get receipt email from inbox based on user.last_email_fetch ,
+# decode it into html, regex to get information, push to database.
 
 class GmailReceipt(APIView):
     permission_classes = (IsAuthenticated,)
-    def post(self, request):
 
+    def post(self, request):
         now = datetime.now()
         print(now)
         epochNow = int(now.strftime('%s')) # in string format
@@ -398,7 +263,7 @@ class GmailReceipt(APIView):
         user_id = 'me'
         if user.last_email_fetch is None:
             print("empty email fetch")
-            search_string = f'after:{epochNow - (10 * 604800)} label:inbox Your Grab E-Receipt Food'
+            search_string = f'after:{epochNow - (14 * 604800)} label:inbox Your Grab E-Receipt Food'
         else:
             print("there is email fetch")
             print(user.last_email_fetch)
@@ -409,25 +274,6 @@ class GmailReceipt(APIView):
 
         user.last_email_fetch = str(epochNow)
         user.save()
-        #
-        # {
-        #     "receipt_code": "00123144",
-        #     "receipt_type": "GrabFood",
-        #     "delivery_date": "22 Aug 22 17:27",
-        #     "receipt_total_fee": 42,
-        #     "vendor": "Subway - 107AM",
-        #
-        #     "item": [{
-        #         "name": "wrap14",
-        #         "qty": 1,
-        #         "total_item_price": 9.9
-        #     },
-        #         {
-        #             "name": "wrap11",
-        #             "qty": 2,
-        #             "total_item_price": 8.9
-        #         }]
-        # }
 
         message = []
         for message_id in message_id_list:
@@ -505,58 +351,19 @@ class GmailReceipt(APIView):
         return Response(message)
 
 
-#
-# class TaskDetails(APIView):
-#     def get(self, request, pk):
-#         department = Departments.objects.get(DepartmentId=pk)
-#         serializer = DepartmentSerializer(department, many=False)
-#         return Response(serializer.data)
-#
-#
-# class TaskCreate(APIView):
-#     def put(self, request):
-#         serializer = DepartmentSerializer(data=request.data)
-#         # deserializing data from frontend. can modify request.data first
-#
-#         if serializer.is_valid():  # validate if serializer is correct
-#             serializer.save()
-#             return Response(serializer.data)
-#
-#         else:
-#             return Response(serializer.errors)
-
-# {
-#     "receipt_code": "82345678",
-#     "receipt_type": "Grabfood",
-#     "delivery_date": "22 Aug 22 17:27",
-#     "receipt_total": 50.00,
-#     "vendor": "Subway - 104AM",
-#     "item": [{
-#         "name": "wrap10",
-#         "qty" : 3,
-#         "total_item_price" : 9.9
-#     },
-#     {
-#         "name": "wrap11",
-#         "qty" : 2,
-#         "total_item_price" : 8.9
-#     }]
-# }
-
+# 'api/receipt-update/' patch to update user.is_assigned and user.assignment when user assigned the receipt
 class ReceiptUpdate(APIView):
     permission_classes = (IsAuthenticated,)
+
     def patch(self, request):
         receipt = Receipt.objects.get(receipt_code= request.data["receipt_code"])
         receipt.is_assigned = True
         receipt.assignment = request.data["assignment"]
         receipt.save()
-        # serializer = ReceiptSerializer(instance=receipt, data=request.data["is_assigned"], partial=True)
-        # using task that you get, updating request data from frontend
-        # partial true allows to update one or many, if false need to send all fields back
-
         return Response("Update done")
 
 
+# 'api/receipt-create/' PUT : testing purpose creating using postman
 class ReceiptCreate(APIView):
     permission_classes = (IsAuthenticated,)
     def put(self, request):
@@ -631,26 +438,5 @@ class ReceiptCreate(APIView):
 
             return Response("Receipt created")
 
-# class TaskUpdate(APIView):
-#     def patch(self, request, pk):
-#         department = Departments.objects.get(DepartmentId=pk)
-#
-#         serializer = DepartmentSerializer(instance=department, data=request.data, partial=True)
-#         # using task that you get, updating request data from frontend
-#         # partial true allows to update one or many, if false need to send all fields back
-#
-#         if serializer.is_valid():
-#             serializer.save()
-#
-#         return Response(serializer.data)
-#
-#
-# class TaskDelete(APIView):
-#     def delete(self, request, pk):
-#         department = Departments.objects.get(DepartmentId=pk)
-#         department.delete()
-#
-#         return Response('item deleted')
-#
 
     
