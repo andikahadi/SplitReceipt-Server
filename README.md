@@ -6,6 +6,34 @@ This full-stack application also serves to fulfill the academic requirements of 
  - SplitReceipt Server Repo : https://github.com/andikahadi/SplitReceipt-Server
  - Database structure : https://drawsql.app/teams/splitreceipt/diagrams/split-receipt
 
+# To run the server
+
+- Install dependencies in venv
+```pip install -r requirements.txt```
+
+- Create .env file in same location as manage.py
+1) Create database in pgAdmin 4, and add these database info in .env
+``` 
+NAME = "your_database_name"
+USER = "your_pgAdmin4_username"
+PASSWORD= "your_password"
+```
+
+2) Register app in https://secure.splitwise.com/apps, with homepage url as http://localhost:5173, and callback url as http://localhost:5173/authorize
+Put Splitwise consumer key and consumer secret in .env:
+```
+consumer_key = your_consumer_key
+consumer_secret = your_consumer_secret
+```
+
+3) Create google credentials https://console.cloud.google.com/apis/credentials.
+Create OAuth2.0 Client IDs, to get Client ID and Client secret
+Add in .env:
+```
+client_id = your_client_id
+client_secret = your_client_secret
+```
+
 # Technologies Used
 Front-end
  - React.js
@@ -18,7 +46,7 @@ Back-end
 Database
  - Postgresql
 
-#How the app works
+# How the app works
 SplitReceipt app communicates with both Google API and Splitwise API. The app fetches GrabFood receipts from user's Gmail, display these receipts in SplitReceipt app for user to assign ownership, and send the assignment as expense in Splitwise.
 
 1) Require user to have Gmail that's connected to Grab Apps, and Splitwise user with friends added.
