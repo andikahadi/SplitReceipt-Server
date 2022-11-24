@@ -34,6 +34,17 @@ client_id = your_client_id
 client_secret = your_client_secret
 ```
 
+- Remove 000X_initial.py files from EmployeeApp/migrations and users/migrations folders. Then do migration to form the database
+```
+python manage.py makemigrations
+python manage.py migrate
+```
+
+- Run server
+```
+python manage.py runserver
+```
+
 # Technologies Used
 Front-end
  - React.js
