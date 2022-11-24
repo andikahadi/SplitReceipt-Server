@@ -23,6 +23,7 @@ from .email_stuff import get_service, get_message, search_messages
 from .html_parser import parse_string
 from django.db.models import Q
 import time
+from decouple import config
 
 
 # 'api/user-read/' POST is to get current user info. GET is to get list of all user for admin.
@@ -90,9 +91,9 @@ class UserDelete(APIView):
 class SplitwiseAuthUrl(APIView):
     permission_classes = (IsAuthenticated,)
     def get(self, request):
-        consumer_key = "tHpxcE0JxqNQvHUN4Lf9Q4IjyZMM1vLEBpWnSROg"
-        consumer_secret = "H3S0iJc2Vcchc3qMtfgZbSMNF9aryjM6E8n6AsFe"
-        #
+        consumer_key = config('consumer_key')
+        consumer_secret = config('consumer_secret')
+
         sObj = Splitwise(consumer_key, consumer_secret)
         url, secret = sObj.getAuthorizeURL()
         # # departments = Departments.objects.all()
@@ -107,9 +108,10 @@ class SplitwiseAuthUrl(APIView):
         oauth_token = re.search(r'(?<=oauth_token=)(.*)(?=&oauth_verifier)', callbackUrl).group(0)
         # oauth_verifier = re.search(r'(?<=oauth_verifier=)(.*)$', callbackUrl)
         # oauth_token = re.search(r'(?<=oauth_token=)(.*)(?=&oauth_verifier)', callbackUrl)
-
-        consumer_key = "tHpxcE0JxqNQvHUN4Lf9Q4IjyZMM1vLEBpWnSROg"
-        consumer_secret = "H3S0iJc2Vcchc3qMtfgZbSMNF9aryjM6E8n6AsFe"
+        
+        consumer_key = config('consumer_key')
+        consumer_secret = config('consumer_secret')
+        
         sObj = Splitwise(consumer_key, consumer_secret)
 
         access_token = sObj.getAccessToken(oauth_token, secret, oauth_verifier)
@@ -121,8 +123,8 @@ class SplitwiseFriend(APIView):
     permission_classes = (IsAuthenticated,)
 
     def post(self, request):
-        consumer_key = "tHpxcE0JxqNQvHUN4Lf9Q4IjyZMM1vLEBpWnSROg"
-        consumer_secret = "H3S0iJc2Vcchc3qMtfgZbSMNF9aryjM6E8n6AsFe"
+        consumer_key = config('consumer_key')
+        consumer_secret = config('consumer_secret')
 
         sObj = Splitwise(consumer_key, consumer_secret)
         sObj.setAccessToken(request.data)
@@ -139,8 +141,9 @@ class SplitwiseFriend(APIView):
 class SplitwiseExpense(APIView):
     permission_classes = (IsAuthenticated,)
     def post(self, request):
-        consumer_key = "tHpxcE0JxqNQvHUN4Lf9Q4IjyZMM1vLEBpWnSROg"
-        consumer_secret = "H3S0iJc2Vcchc3qMtfgZbSMNF9aryjM6E8n6AsFe"
+        consumer_key = config('consumer_key')
+        consumer_secret = config('consumer_secret')
+
         access_token = request.data["access_token"]
 
         s = Splitwise(consumer_key, consumer_secret, access_token)
@@ -263,11 +266,12 @@ class GmailReceipt(APIView):
         user_id = 'me'
         if user.last_email_fetch is None:
             print("empty email fetch")
-            search_string = f'after:{epochNow - (14 * 604800)} label:inbox Your Grab E-Receipt Food'
+            search_string = f'after:{epochNow - (4 * 604800)} label:inbox Your Grab E-Receipt Food'
         else:
             print("there is email fetch")
             print(user.last_email_fetch)
-            search_string = f'after:{epochNow} label:inbox Your Grab E-Receipt Food'
+            search_string = f'after:{user.last_email_fetch} label:inbox Your Grab E-Receipt Food'
+            print(search_string)
 
         service = get_service(google_access_token)
         message_id_list = search_messages(service, user_id, search_string)

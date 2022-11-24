@@ -9,6 +9,7 @@ from googleapiclient.errors import HttpError
 import email
 import base64
 import arrow
+from decouple import config
 
 
 # If modifying these scopes, delete the file token.json.
@@ -87,8 +88,8 @@ def get_service(google_access_token):
         "token": google_access_token,
         "refresh_token": "",
         "token_uri": "https://oauth2.googleapis.com/token",
-        "client_id": "1021304219474-kffnfs7t3c0hh09g6sbs4kq1fg8djr43.apps.googleusercontent.com",
-        "client_secret": "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",
+        "client_id": config('client_id'),
+        "client_secret": config('client_secret'),
         "scopes": ["https://www.googleapis.com/auth/gmail.readonly"], "expiry": time
     }, SCOPES)
     service = build('gmail', 'v1', credentials=creds)

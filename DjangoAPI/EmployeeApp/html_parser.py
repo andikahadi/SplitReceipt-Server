@@ -38,16 +38,6 @@ def parse_string(html_msg):
                   "item": []}
 
 
-    # vendor = ""
-    # total = ""
-    # date = ""
-    # orders = []
-    # booking_code = ""
-    # vehicle_type = ""
-    #
-    # fees = ""
-    # link = ""
-
     i = 0
     while i < len(span_text)-2:
         if order_info["delivery_date"] == "":
